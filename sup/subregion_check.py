@@ -1,10 +1,5 @@
-import time
-from pprint import pprint
-
 import pandas as pd
 from openpyxl import Workbook, load_workbook
-from openpyxl.utils.cell import get_column_letter
-from openpyxl.utils.dataframe import dataframe_to_rows
 
 
 def subregion_show():

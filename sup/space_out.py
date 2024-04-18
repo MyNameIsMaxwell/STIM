@@ -6,7 +6,7 @@ from openpyxl.utils.cell import get_column_letter
 
 
 def space_out():
-    file_name = 'Непогода по регионам.xls'
+    file_name = 'fuel.xlsx'
     new_file_name = f'{file_name[:-4]}(new).xlsx'
 
     df = pd.read_excel(file_name)
