@@ -62,12 +62,13 @@ def csv_edit():
                         try:
                             if work_material in out_material:
                                 for work_type in type_of_works:
-                                    brigades_materials_used_info[brigade][date][work_type] = {}
                                     brigade_one_category_material_count = brigade_day_info[data["Material stock picking out items/Категория материала/Отображаемое Имя"] == out_material]["Material stock picking out items/Количество в базовых"].sum()
                                     brigade_material_work_square = brigade_day_info[data["Event Prod Item/Категория материала/Отображаемое Имя"] == work_material][data["Event Prod Item/Вид работ"] == work_type]["Event Prod Item/Площадь, м²"].sum()
-                                    if work_material in brigades_materials_used_info[brigade][date]:
-                                        brigade_all_category_material_count += brigade_one_category_material_count
-                                    else:
+                                    try:
+                                        if work_material in brigades_materials_used_info[brigade][date][work_type]:
+                                            brigade_all_category_material_count += brigade_one_category_material_count
+                                    except KeyError as e:
+                                        brigades_materials_used_info[brigade][date][work_type] = {}
                                         brigade_all_category_material_count = brigade_one_category_material_count
                                     brigade_flow_rate_metr = brigade_all_category_material_count/brigade_material_work_square
                                     brigades_materials_used_info[brigade][date][work_type][work_material] = brigade_flow_rate_metr.round(2)
