@@ -54,21 +54,23 @@ def create_xlxs(data):
     # df.to_excel('output.xlsx', index=False)
 
     rows = []
-    date = [i for i in range(1, 32)]  # Увеличиваем до 32, так как мы включаем числа от 1 до 31
-    rows.append(['Contract', 'Person', 'Category'] + date)  # Добавляем заголовки столбцов
+    date = [i for i in range(1, 32)]
+    rows.append(['Контракт', 'Бригада', 'Материал'] + date)
     for contract, contract_info in data.items():
         for brigade, details in contract_info.items():
             for day, material in details.items():
                 for material_name, material_count in material.items():
                     short_material_name = material_name.split('/')[3]
                     row = [contract, brigade, short_material_name]
-                  #   row.extend(("") * (int(day) - 1))
-                    row_equal = any(set(row).issubset(sublist) for sublist in rows)
-                    if row_equal:
-                        """ПРЕОБРАЗОВАТЬ В DATAFRAME И ПО НЕМУ УЖЕ ИСКАТЬ"""
-                        rows[row_equal.index(True)].append(value_to_insert)
+                    #   row.extend(("") * (int(day) - 1))
+                    #   row_equal = any(set(row).issubset(sublist) for sublist in rows)
+                    row_equal_index = next((i for i, sublist in enumerate(rows) if sublist[:3] == row), False)
+                    if row_equal_index:
+                        values = [None for _ in range(int(day) - 1)]
+                        rows[row_equal_index].extend(values)
+                        rows[row_equal_index].insert((int(day) + 2), details.get(day).get(material_name))
                     else:
-                        values = [None for _ in range(int(day) - 1)]  # Создаем список из (day - 1) пустых строк
+                        values = [None for _ in range(int(day) - 1)]
                         row.extend(values)
                         row.append(details.get(day).get(material_name))  # Получаем данные для каждого дня
                         rows.append(row)
@@ -95,7 +97,7 @@ def create_xlxs(data):
     workbook.save(file_name)
 
 def csv_edit():
-    file_name = "Экономисты/square&material.csv"
+    file_name = "square&material.csv"
     data = pd.read_csv(file_name)
     # data.dropna(subset=["Event Prod Item/Контракт/Отображаемое Имя", 'Material stock picking out items/Контракт/Отображаемое Имя'], inplace=True)
     mask = data['Event Prod Item/Контракт/Отображаемое Имя'].isna() & data['Material stock picking out items/Контракт/Отображаемое Имя'].isna()
@@ -109,7 +111,6 @@ def csv_edit():
     data['Event Prod Item/Контракт/Отображаемое Имя'].fillna(method='ffill', inplace=True)
     contracts = data['Event Prod Item/Контракт/Отображаемое Имя'].drop_duplicates().dropna()
 
-    dates = data['Начало смены'].drop_duplicates()
 
     brigades_materials_used_info = {}
 
@@ -146,6 +147,7 @@ def csv_edit():
     #                     except TypeError as e:
     #                         continue
     for contract in contracts:
+        dates = data[data["Event Prod Item/Контракт/Отображаемое Имя"] == contract]['Начало смены'].drop_duplicates()
         brigades_materials_used_info[contract] = {}
         brigades = data[data["Event Prod Item/Контракт/Отображаемое Имя"] == contract]['Бригада/Отображаемое Имя'].drop_duplicates()
         for brigade in brigades:

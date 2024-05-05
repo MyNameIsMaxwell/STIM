@@ -77,7 +77,7 @@ def fuel_for_all():
 
 
 def second_time_filling():
-    file_name = 'fuel_march.csv'
+    file_name = 'fuel_october.csv'
 
     data = pd.read_csv(file_name)
 
