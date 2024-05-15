@@ -1,6 +1,7 @@
 import time
 
 import gspread
+import openpyxl
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import numpy as np
@@ -8,6 +9,7 @@ from pprint import pprint
 
 from openpyxl.reader.excel import load_workbook
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import PatternFill
 
 scope = ['https://www.googleapis.com/auth/spreadsheets',
          "https://www.googleapis.com/auth/drive"]
@@ -34,8 +36,63 @@ def google_table_read():
         df_next.replace('', np.nan, inplace=True)
         df_next['Контракт'].fillna(method='ffill', inplace=True)
         df = pd.concat([df, df_next])
-    pprint(df)
-# google_table_read()
+
+    return df
+
+def material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade):
+    material_values = worksheet[material_sheet_index + 1]
+    if not google_values[3] in [np.nan]:
+        for index, value in enumerate(material_values[:35]):
+            if isinstance(value.value, float):
+                inaccuracy = 100 - ((value.value * 100) / float(google_values[3].replace(',', '.')))
+                if inaccuracy > 10 or inaccuracy < -10:
+                    worksheet.cell(row=material_sheet_index + 1, column=index + 1).fill = fill
+    elif not google_values[2] in [np.nan]:
+        for index, value in enumerate(material_values[:35]):
+            inaccuracy = 100 - ((value.value * 100) / float(google_values[2].replace(',', '.')))
+            if inaccuracy > 10 or inaccuracy < -10:
+                worksheet.cell(row=material_sheet_index + 1, column=index + 1).fill = fill
+def show_mistakes_xlxs():
+    file_name = 'output.xlsx'
+    workbook = load_workbook(file_name)
+    worksheet = workbook.active
+
+    google_sheet_values = google_table_read()
+
+    contracts = [cell.value for cell in worksheet["A"]]
+    materials = [cell.value for cell in worksheet["C"]]
+    brigades = [cell.value for cell in worksheet["B"]]
+
+    fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+
+    for google_index, google_values in google_sheet_values.iterrows():
+        contracts_sheet_indices = [sheet_index for sheet_index, sheet_contract_value in enumerate(contracts) if sheet_contract_value == google_values[0]]
+        # for contract_sheet_index in contracts_sheet_indices:
+        for material_sheet_index in contracts_sheet_indices:
+            if google_values[0] == contracts[material_sheet_index]:
+                google_material_name = google_values[1]
+                brigade = brigades[material_sheet_index]
+                if materials[material_sheet_index].split(' ')[1] == google_material_name.split(' ')[0] and (brigade.startswith('П') or brigade.startswith('К') or brigade.startswith('У')) and google_material_name.split(' ')[1] == 'лин':
+                    material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade)
+                elif materials[material_sheet_index].split(' ')[1] == google_material_name.split(' ')[0] and brigade.startswith('Р') and google_material_name.split(' ')[1] == 'руч':
+                    material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade)
+                elif google_material_name == "СШк" and materials[material_sheet_index] == " СШ крупные":
+                    material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade)
+                elif google_material_name == "СШм" and materials[material_sheet_index] == " СШ мелкие":
+                    material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade)
+
+    for i in range(1, worksheet.max_column + 1):
+        letter = get_column_letter(i)
+        if letter != "A" and letter != "B" and letter != "C":
+            worksheet.column_dimensions[letter].width = 8
+        elif letter == "A":
+            worksheet.column_dimensions[letter].width = 30
+        elif letter == "B":
+            worksheet.column_dimensions[letter].width = 20
+        elif letter == "C":
+            worksheet.column_dimensions[letter].width = 15
+    # Сохраняем изменения
+    workbook.save('output.xlsx')
 
 
 def create_xlxs(data):
@@ -79,22 +136,7 @@ def create_xlxs(data):
 
     file_name = 'output.xlsx'
     df.to_excel(file_name, index=False, header=False)
-    time.sleep(1)
-
-    workbook = load_workbook(file_name)
-    worksheet = workbook.active
-    for i in range(1, worksheet.max_column + 1):
-        letter = get_column_letter(i)
-        if letter != "A" and letter != "B" and letter != "C":
-            worksheet.column_dimensions[letter].width = 8
-        elif letter == "A":
-            worksheet.column_dimensions[letter].width = 30
-        elif letter == "B":
-            worksheet.column_dimensions[letter].width = 20
-        elif letter == "C":
-            worksheet.column_dimensions[letter].width = 15
-
-    workbook.save(file_name)
+    show_mistakes_xlxs()
 
 def csv_edit():
     file_name = "square&material.csv"
