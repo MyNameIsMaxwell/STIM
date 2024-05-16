@@ -49,9 +49,12 @@ def material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fil
                     worksheet.cell(row=material_sheet_index + 1, column=index + 1).fill = fill
     elif not google_values[2] in [np.nan]:
         for index, value in enumerate(material_values[:35]):
-            inaccuracy = 100 - ((value.value * 100) / float(google_values[2].replace(',', '.')))
-            if inaccuracy > 10 or inaccuracy < -10:
-                worksheet.cell(row=material_sheet_index + 1, column=index + 1).fill = fill
+            if isinstance(value.value, float):
+                inaccuracy = 100 - ((value.value * 100) / float(google_values[2].replace(',', '.')))
+                if inaccuracy > 10 or inaccuracy < -10:
+                    worksheet.cell(row=material_sheet_index + 1, column=index + 1).fill = fill
+
+
 def show_mistakes_xlxs():
     file_name = 'output.xlsx'
     workbook = load_workbook(file_name)
@@ -76,7 +79,7 @@ def show_mistakes_xlxs():
                     material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade)
                 elif materials[material_sheet_index].split(' ')[1] == google_material_name.split(' ')[0] and brigade.startswith('Р') and google_material_name.split(' ')[1] == 'руч':
                     material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade)
-                elif google_material_name == "СШк" and materials[material_sheet_index] == " СШ крупные":
+                if google_material_name == "СШк" and materials[material_sheet_index] == " СШ крупные":
                     material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade)
                 elif google_material_name == "СШм" and materials[material_sheet_index] == " СШ мелкие":
                     material_inaccuracy_calc(worksheet, material_sheet_index, google_values, fill, brigade)
@@ -91,7 +94,6 @@ def show_mistakes_xlxs():
             worksheet.column_dimensions[letter].width = 20
         elif letter == "C":
             worksheet.column_dimensions[letter].width = 15
-    # Сохраняем изменения
     workbook.save('output.xlsx')
 
 
