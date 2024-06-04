@@ -6,14 +6,14 @@ from openpyxl.utils.cell import get_column_letter
 
 
 def space_out():
-    file_name = 'prostoi november.xls'
+    file_name = 'roadmark_mrp_shift.work_shift.xls'
     new_file_name = f'{file_name[:-4]}(new).xlsx'
 
     df = pd.read_excel(file_name)
 
     # Заполните пустые ячейки в первом столбце данными из предыдущей строки
     df.iloc[:, 0].fillna(method='ffill', inplace=True)
-    # df.iloc[:, 1].fillna(method='ffill', inplace=True)
+    df.iloc[:, 1].fillna(method='ffill', inplace=True)
     # df.iloc[:, 2].fillna(method='ffill', inplace=True)
     # df.iloc[:, 3].fillna(method='ffill', inplace=True)
 
